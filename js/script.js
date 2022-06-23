@@ -1,95 +1,74 @@
-//variables
-const inputForTag = document.querySelector('.inputTag'),
-    readOnlyCheckbox = document.querySelector('.readOnlyCheckbox'),
-    btnAddTag = document.querySelector('.btnAddTag'),
-    listTags = document.querySelector('.listTags');
+class LocalStorageTags {
 
-const  tags = {
-    _tagsList: [],
-    
-    getTags() {
-        return this._tagsList;
-    },
-    setTags(value) {
-        this._tagsList = value;
-    },
-    addTag(value) {
-        this._tagsList.push(value);
-    },
-    removeTag(id) {
-        const updateTags = this._tagsList.filter((el,i) => {
-            if(el.id !== id) {
-                return el;
-            } 
-        }) 
-        this._tagsList = updateTags;
-        localStorage.setItem('tags', JSON.stringify(this._tagsList));
-    },
+    saveTags = (value, data) => {
+        localStorage.setItem(value, JSON.stringify(data));
+    };
+
+    loadTags = (value = null) => {
+        const listTagsStorage =  localStorage.getItem(value);
+        return JSON.parse(listTagsStorage);
+    };
+}
+
+class ManagerListTags extends LocalStorageTags {
+
+    inputForTag = document.querySelector('.inputTag');
+    btnAddTag = document.querySelector('.btnAddTag');
+    wrapTags = document.querySelector('.listTags');
+    imgDeleteTags = null;
 
 
-
-    //тут под вопросом, не совсем понял, что должен lелать этот метод, сделаю как я понял...
-    readOnly(checked) {
-        if (checked) {
-            inputForTag.setAttribute('disabled', 'disabled');
-            btnAddTag.setAttribute('disabled', 'disabled');
-            deleteTag.forEach(el => {
-                el.classList.add('readMode');
-            })
-        } else {
-            inputForTag.removeAttribute('disabled');
-            btnAddTag.removeAttribute('disabled');
-            deleteTag.forEach(el => {
-                el.classList.remove('readMode');
-            })
-        }
+    constructor() {
+        super();
     }
-}
+     
+    _listTags = this.loadTags('tagsStorage') ? this.loadTags('tagsStorage') : [];
 
-if(localStorage.getItem('tags')) {
-    const getTagsLocal = JSON.parse(localStorage.getItem('tags'))
-    tags.setTags(getTagsLocal);
-    showListTags();
-}
-
-// function
-
-function showListTags () {
-    listTags.innerHTML = ``;
-    tags.getTags().map(el => {
-            listTags.innerHTML += 
-            `<li class="itemTag"><p>${el.content}</p><img class="deleteTag" src="../assets/img/close.svg"  alt="delete tag" /></li>`;
-        })
-}
-
-readOnlyCheckbox.addEventListener('change', (e) => {
-    tags.readOnly(e.target.checked);
-})
-let deleteTag = document.querySelectorAll('.deleteTag');
-
-btnAddTag.addEventListener('click', () => {
-    if (inputForTag.value != ``) {
-        listTags.innerHTML = ``;
-        const newTag = {content: inputForTag.value, id: new Date()};
-        tags.addTag(newTag);
-        showListTags();
-        inputForTag.value = ``;
-        localStorage.setItem('tags', JSON.stringify(tags.getTags()));
-    }
-    deleteTag = document.querySelectorAll('.deleteTag');
-});
-
-listTags.addEventListener('click', (e) => {
-    deleteTag = document.querySelectorAll('.deleteTag');
-    deleteTag.forEach((el, i) => {
-        if(e.target == el) {
-            console.log(el)
-            tags.removeTag(tags.getTags()[i].id);
-            showListTags();
-        }
+    addTags = this.btnAddTag.addEventListener('click', () => {
+        if(this.inputForTag.value) {
+            this._listTags.push({
+                id: new Date(),
+                content: this.inputForTag.value,
+            });
+            this.saveTags('tagsStorage', this._listTags);
+            this.inputForTag.value = '';
+            this.loadTagsList('tagsStorage');
+        };
     })
-})
 
+    deleteTags = (index) => {
+        const updateListTags = this._listTags.filter((el, i) => {
+            if(index !== i) {
+                return el;
+            }
+        })
+        this._listTags = updateListTags;
+        this.saveTags('tagsStorage', this._listTags);
+        this.loadTagsList('tagsStorage');
+    }
+    
+    loadTagsList = (value, wrapperTags = this.wrapTags) => {
+        if(value) {
+            wrapperTags.innerHTML = ``;
+            this.loadTags(value).map(el => {
+                wrapperTags.innerHTML += 
+                `<li class="itemTag"><p>${el.content}</p><img class="deleteTag" src="../assets/img/close.svg"  alt="delete tag" /></li>`;
+            })
+            this.imgDeleteTags = document.querySelectorAll('.deleteTag');
+            this.imgDeleteTags.forEach((el, i) => {
+                el.addEventListener('click', () => {
+                    this.deleteTags(i);
+                })
+            })
+        }
+    }
+}
+
+
+const childrenMananger = new ManagerListTags();
+if(childrenMananger.loadTags('tagsStorage')) {
+    childrenMananger.loadTagsList('tagsStorage');
+}
 
 
 
